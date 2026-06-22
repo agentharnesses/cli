@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentharnesses-cli"
+version = "0.1.0"
+description = "CLI for agentharnesses.io"
+requires-python = ">=3.10"
+dependencies = [
+    "click>=8.1",
+]
+
+[project.scripts]
+ahar = "ahar.main:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
