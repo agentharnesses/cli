@@ -5,6 +5,38 @@ import click
 
 _METASKILL_REPO = "https://github.com/agentharnesses/metaskill"  # TODO: replace with final URL
 _METASKILL_DEST = ".claude/plugins/metaskill"
+_MAINTAIN_SKILL_DEST = ".claude/skills/maintain-harness.md"
+
+_MAINTAIN_SKILL = """\
+---
+name: maintain-harness
+description: How to maintain and update this harness — updating HARNESS.md, adding skills and references, managing the skill index.
+---
+
+## Maintaining the Harness
+
+When asked to maintain, update, or extend this harness, follow these conventions:
+
+### HARNESS.md
+- Keep the `## Skills` section in sync with entries in `skills/SKILLS.md`
+- Keep the `## References` section in sync with entries in `references/REFERENCES.md`
+- Update the `description` frontmatter field when the harness scope changes
+
+### Adding a skill bucket
+1. Create `skills/<bucket-name>/<bucket-name>.md` with a frontmatter `name` and `description`
+2. Add an entry to `skills/SKILLS.md` summarizing when to use the bucket
+3. Add a bullet to the `## Skills` section in `HARNESS.md`
+
+### Adding a reference document
+1. Add the document to `references/`
+2. Add an entry to `references/REFERENCES.md` describing the document's purpose
+3. Add a bullet to the `## References` section in `HARNESS.md`
+
+### General conventions
+- Keep skill descriptions actionable: "Use when..." not "This skill..."
+- Reference documents should be stable facts; skill buckets contain executable guidance
+- Prefer updating existing skill buckets over creating new ones when scope overlaps
+"""
 
 
 def _write(path, content):
@@ -84,9 +116,15 @@ TODO: add skill buckets here as they are created.
 description: TODO: describe the reference documents in this harness and how to use them.
 ---
 
-TODO: add reference documents here as they are created.
+TODO: add reference documents here as they are added.
 """,
     )
+
+
+_PRESETS = {
+    "claude": "Full Claude Code setup: metaskill plugin + maintain-harness skill",
+    "empty":  "Bare minimum: no additional plugins or skills",
+}
 
 
 @click.command()
@@ -111,11 +149,30 @@ def init(name):
     click.echo("  skills/SKILLS.md")
     click.echo("  references/REFERENCES.md")
 
-    if click.confirm("\nConfigure Claude Code for this harness?", default=True):
-        _configure_claude(cwd)
+    click.echo("\nClaude Code preset:")
+    for key, desc in _PRESETS.items():
+        click.echo(f"  {key:<8} {desc}")
+
+    preset = click.prompt(
+        "Preset",
+        type=click.Choice(list(_PRESETS.keys()), case_sensitive=False),
+        default="claude",
+        show_choices=False,
+    )
+    _configure_claude(cwd, preset)
 
 
-def _configure_claude(root):
+def _configure_claude(root, preset):
+    if preset == "empty":
+        click.echo("Skipping Claude Code plugin configuration (empty preset).")
+        return
+
+    # claude preset: metaskill + maintain-harness skill
+    _install_metaskill(root)
+    _install_maintain_skill(root)
+
+
+def _install_metaskill(root):
     dest = os.path.join(root, _METASKILL_DEST)
     if os.path.exists(dest):
         click.echo(f"Metaskill already present at {_METASKILL_DEST} — skipping clone.")
@@ -132,3 +189,12 @@ def _configure_claude(root):
         click.echo(f"Clone failed:\n{result.stderr.strip()}", err=True)
         sys.exit(1)
     click.echo(f"  {_METASKILL_DEST}")
+
+
+def _install_maintain_skill(root):
+    dest = os.path.join(root, _MAINTAIN_SKILL_DEST)
+    if os.path.exists(dest):
+        click.echo(f"maintain-harness skill already present at {_MAINTAIN_SKILL_DEST} — skipping.")
+        return
+    _write(dest, _MAINTAIN_SKILL)
+    click.echo(f"  {_MAINTAIN_SKILL_DEST}")
