@@ -14,39 +14,25 @@ _MAINTAIN_SKILLS_INDEX_DEST = "skills/maintenance/SKILLS.md"
 _MAINTAIN_SKILL = """\
 ---
 name: modify-harness
-description: Use when asked to maintain, update, or extend this harness — updating HARNESS.md, adding skills and references, managing the skill index.
+description: Update harness structure files — HARNESS.md, SKILLS.md indexes, REFERENCES.md — to keep routing and descriptions accurate as the harness evolves.
 ---
 
-## Maintaining the Harness
+## Role
 
-When asked to maintain, update, or extend this harness, follow these conventions.
+Keep the harness self-consistent when skills or references are added, renamed, or removed.
 
-When **maintaining the harness** (adding, moving, or renaming files), use `reverse_disclose.py` to find every `.md` file above the target that links to it — so you can update all references that would break:
+## What to do
 
-```
-python3 .claude/skills/agent-harnesses/scripts/reverse_disclose.py <target_path>
-```
+1. Use reverse progressive disclosure (via the `agent-harnesses` skill) to find which index files reference the target path
+2. Read the current state of each affected file
+3. Apply the change: add, update, or remove the relevant entry
+4. Ensure descriptions remain accurate and routing summaries reflect actual contents
 
-Run this before and after any structural change. The output lists each ancestor `.md` file that references the target, with line numbers and link text, so nothing is left pointing to a stale path.
+## Conventions
 
-### HARNESS.md
-- Keep the `## Skills` section in sync with entries in `skills/SKILLS.md`
-- Keep the `## References` section in sync with entries in `references/REFERENCES.md`
-- Update the `description` frontmatter field when the harness scope changes
-
-### Adding a skill bucket
-1. Create `skills/<bucket-name>/<skill-name>/SKILL.md` with a frontmatter `name` and `description`
-2. Add an entry to `skills/<bucket-name>/SKILLS.md` summarizing when to use the skill
-3. Ensure `skills/SKILLS.md` references the bucket
-4. Add a bullet to the `## Skills` section in `HARNESS.md`
-
-### Adding a reference document
-1. Add the document to `references/`
-2. Add an entry to `references/REFERENCES.md` describing the document's purpose
-3. Add a bullet to the `## References` section in `HARNESS.md`
-
-### General conventions
-- Keep skill descriptions actionable: "Use when..." not "This skill..."
+- Keep `HARNESS.md` `## Skills` and `## References` sections in sync with `skills/SKILLS.md` and `references/REFERENCES.md`
+- Update the `description` frontmatter in `HARNESS.md` when the harness scope changes
+- Skill descriptions should be actionable: "Use when..." not "This skill..."
 - Reference documents should be stable facts; skill buckets contain executable guidance
 - Prefer updating existing skill buckets over creating new ones when scope overlaps
 """
@@ -81,17 +67,9 @@ TODO: write the entry message Claude should internalize when this harness loads.
 
 ## How to Find Information for Claude
 
-Use the `agent-harnesses` skill to explore the harness, just in time, based on prompts from the user. Run `disclose.py` with `python3` against this harness directory to progressively explore its contents — select only what is relevant and repeat until the session is complete, then read the returned resources.
+Use the `agent-harnesses` skill to explore the harness just in time, based on prompts from the user. Select only what is relevant and repeat until the session is complete, then read the returned resources.
 
-Do not load skills or references speculatively. Use `disclose.py` to find resources when necessary. Any time you need to find anything in the harness, and you don't already know where it exists, use `disclose.py`.
-
-When **maintaining the harness** (adding, moving, or renaming files), use `reverse_disclose.py` to find every `.md` file above the target that links to it — so you can update all references that would break:
-
-```
-python3 .claude/skills/agent-harnesses/scripts/reverse_disclose.py <target_path>
-```
-
-Run this before and after any structural change. The output lists each ancestor `.md` file that references the target, with line numbers and link text, so nothing is left pointing to a stale path.
+When **maintaining the harness** (adding, moving, or renaming files), consult the `agent-harnesses` skill for reverse progressive disclosure to keep routing files in sync.
 
 ## Skills
 
