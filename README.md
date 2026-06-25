@@ -53,6 +53,8 @@ When using the `claude` preset (default), also installs:
             └── SKILL.md
 ```
 
+The metaskill is cloned fresh from [agentharnesses/metaskill](https://github.com/agentharnesses/metaskill) at init time, so you always get the latest version.
+
 ## Publishing
 
 Releases are published to PyPI automatically when a version tag is pushed:
