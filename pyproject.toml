@@ -1,6 +1,6 @@
 [project]
 name = "agentharnesses-cli"
-version = "0.1.0"
+dynamic = ["version"]
 description = "CLI tools for agentharnesses.io"
 license = "Apache-2.0"
 readme = "README.md"
@@ -17,8 +17,11 @@ Repository = "https://github.com/agentharnesses/cli"
 ahar = "ahar.main:cli"
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ahar"]

@@ -1,21 +1,33 @@
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 import click
 
-_METASKILL_REPO = "https://github.com/agentharnesses/metaskill"  # TODO: replace with final URL
-_METASKILL_DEST = ".claude/plugins/metaskill"
-_MAINTAIN_SKILL_DEST = ".claude/skills/maintain-harness.md"
+_METASKILL_REPO = "https://github.com/agentharnesses/metaskill"
+_METASKILL_DEST = ".claude/skills/agent-harnesses"
+
+_MAINTAIN_SKILL_DEST = "skills/maintenance/modify-harness/SKILL.md"
+_MAINTAIN_SKILLS_INDEX_DEST = "skills/maintenance/SKILLS.md"
 
 _MAINTAIN_SKILL = """\
 ---
-name: maintain-harness
-description: How to maintain and update this harness — updating HARNESS.md, adding skills and references, managing the skill index.
+name: modify-harness
+description: Use when asked to maintain, update, or extend this harness — updating HARNESS.md, adding skills and references, managing the skill index.
 ---
 
 ## Maintaining the Harness
 
-When asked to maintain, update, or extend this harness, follow these conventions:
+When asked to maintain, update, or extend this harness, follow these conventions.
+
+When **maintaining the harness** (adding, moving, or renaming files), use `reverse_disclose.py` to find every `.md` file above the target that links to it — so you can update all references that would break:
+
+```
+python3 .claude/skills/agent-harnesses/scripts/reverse_disclose.py <target_path>
+```
+
+Run this before and after any structural change. The output lists each ancestor `.md` file that references the target, with line numbers and link text, so nothing is left pointing to a stale path.
 
 ### HARNESS.md
 - Keep the `## Skills` section in sync with entries in `skills/SKILLS.md`
@@ -23,9 +35,10 @@ When asked to maintain, update, or extend this harness, follow these conventions
 - Update the `description` frontmatter field when the harness scope changes
 
 ### Adding a skill bucket
-1. Create `skills/<bucket-name>/<bucket-name>.md` with a frontmatter `name` and `description`
-2. Add an entry to `skills/SKILLS.md` summarizing when to use the bucket
-3. Add a bullet to the `## Skills` section in `HARNESS.md`
+1. Create `skills/<bucket-name>/<skill-name>/SKILL.md` with a frontmatter `name` and `description`
+2. Add an entry to `skills/<bucket-name>/SKILLS.md` summarizing when to use the skill
+3. Ensure `skills/SKILLS.md` references the bucket
+4. Add a bullet to the `## Skills` section in `HARNESS.md`
 
 ### Adding a reference document
 1. Add the document to `references/`
@@ -36,6 +49,14 @@ When asked to maintain, update, or extend this harness, follow these conventions
 - Keep skill descriptions actionable: "Use when..." not "This skill..."
 - Reference documents should be stable facts; skill buckets contain executable guidance
 - Prefer updating existing skill buckets over creating new ones when scope overlaps
+"""
+
+_MAINTAIN_SKILLS_INDEX = """\
+---
+description: Harness upkeep skills — for modifying the harness structure, adding skills and references.
+---
+
+- [modify-harness](modify-harness/SKILL.md) — Use when maintaining or extending this harness
 """
 
 
@@ -58,6 +79,20 @@ description: TODO: describe what this harness does and the role it gives Claude.
 
 TODO: write the entry message Claude should internalize when this harness loads.
 
+## How to Find Information for Claude
+
+Use the `agent-harnesses` skill to explore the harness, just in time, based on prompts from the user. Run `disclose.py` with `python3` against this harness directory to progressively explore its contents — select only what is relevant and repeat until the session is complete, then read the returned resources.
+
+Do not load skills or references speculatively. Use `disclose.py` to find resources when necessary. Any time you need to find anything in the harness, and you don't already know where it exists, use `disclose.py`.
+
+When **maintaining the harness** (adding, moving, or renaming files), use `reverse_disclose.py` to find every `.md` file above the target that links to it — so you can update all references that would break:
+
+```
+python3 .claude/skills/agent-harnesses/scripts/reverse_disclose.py <target_path>
+```
+
+Run this before and after any structural change. The output lists each ancestor `.md` file that references the target, with line numbers and link text, so nothing is left pointing to a stale path.
+
 ## Skills
 
 TODO: list skill buckets here as they are created.
@@ -76,6 +111,21 @@ TODO: list reference documents here as they are added.
 # {name}
 
 TODO: brief description of this harness.
+""",
+    )
+
+    _write(
+        f"{root}/.gitignore",
+        """\
+# Claude settings contain absolute paths — keep local
+.claude/settings.json
+.claude/settings.local.json
+
+# Metaskill session state
+.claude/skills/agent-harnesses/sessions/
+
+# Mac
+.DS_Store
 """,
     )
 
@@ -145,6 +195,7 @@ def init(name):
     click.echo(f"Initialized harness '{name}' in {cwd}")
     click.echo("  HARNESS.md")
     click.echo("  README.md")
+    click.echo("  .gitignore")
     click.echo("  .claude/settings.json")
     click.echo("  skills/SKILLS.md")
     click.echo("  references/REFERENCES.md")
@@ -175,26 +226,38 @@ def _configure_claude(root, preset):
 def _install_metaskill(root):
     dest = os.path.join(root, _METASKILL_DEST)
     if os.path.exists(dest):
-        click.echo(f"Metaskill already present at {_METASKILL_DEST} — skipping clone.")
+        click.echo(f"Metaskill already present at {_METASKILL_DEST} — skipping.")
         return
 
-    os.makedirs(os.path.dirname(dest), exist_ok=True)
-    click.echo(f"Cloning metaskill into {_METASKILL_DEST}...")
-    result = subprocess.run(
-        ["git", "clone", _METASKILL_REPO, dest],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        click.echo(f"Clone failed:\n{result.stderr.strip()}", err=True)
-        sys.exit(1)
+    click.echo("Cloning metaskill...")
+    with tempfile.TemporaryDirectory() as tmp:
+        clone_dir = os.path.join(tmp, "metaskill")
+        result = subprocess.run(
+            ["git", "clone", _METASKILL_REPO, clone_dir],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            click.echo(f"Clone failed:\n{result.stderr.strip()}", err=True)
+            sys.exit(1)
+
+        src = os.path.join(clone_dir, "agent-harnesses")
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        shutil.copytree(src, dest)
+
     click.echo(f"  {_METASKILL_DEST}")
 
 
 def _install_maintain_skill(root):
-    dest = os.path.join(root, _MAINTAIN_SKILL_DEST)
-    if os.path.exists(dest):
-        click.echo(f"maintain-harness skill already present at {_MAINTAIN_SKILL_DEST} — skipping.")
+    skill_dest = os.path.join(root, _MAINTAIN_SKILL_DEST)
+    index_dest = os.path.join(root, _MAINTAIN_SKILLS_INDEX_DEST)
+
+    if os.path.exists(skill_dest):
+        click.echo(f"maintain-harness skill already present — skipping.")
         return
-    _write(dest, _MAINTAIN_SKILL)
+
+    _write(index_dest, _MAINTAIN_SKILLS_INDEX)
+    click.echo(f"  {_MAINTAIN_SKILLS_INDEX_DEST}")
+
+    _write(skill_dest, _MAINTAIN_SKILL)
     click.echo(f"  {_MAINTAIN_SKILL_DEST}")

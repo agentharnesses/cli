@@ -1,32 +1,12 @@
 # agentharnesses-cli
 
-Command line tools for [agentharnesses.io](http://agentharnesses.io).
+CLI for [agentharnesses.io](https://agentharnesses.io) — scaffold and manage Agent Harnesses.
 
 ## Installation
-
-### From PyPI (once published)
 
 ```bash
 pip install agentharnesses-cli
 ```
-
-### From source
-
-```bash
-git clone https://github.com/your-org/cli.git
-cd cli
-pip install .
-```
-
-### Development install
-
-```bash
-git clone https://github.com/your-org/cli.git
-cd cli
-pip install -e .
-```
-
-The `-e` flag installs in editable mode so changes to the source are reflected immediately without reinstalling.
 
 ## Usage
 
@@ -48,4 +28,42 @@ Optionally specify a name (defaults to the directory name):
 ahar init my-harness
 ```
 
-This creates a `harness.yaml` file in the current directory.
+Scaffolds the following structure:
+
+```
+my-harness/
+├── HARNESS.md                       # entry point and agent identity
+├── README.md                        # human-facing description
+├── .gitignore
+├── .claude/settings.json            # registers the harness as a Claude Code plugin
+├── skills/
+│   └── SKILLS.md                    # skill index
+└── references/
+    └── REFERENCES.md                # reference index
+```
+
+When using the `claude` preset (default), also installs:
+
+```
+├── .claude/skills/agent-harnesses/  # metaskill for progressive harness exploration
+└── skills/
+    └── maintenance/
+        ├── SKILLS.md
+        └── modify-harness/
+            └── SKILL.md
+```
+
+## Publishing
+
+Releases are published to PyPI automatically when a version tag is pushed:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The GitHub Actions workflow builds the package and publishes it via trusted publishing (no API token required). The version is derived from the tag via `hatch-vcs`.
+
+## License
+
+Apache 2.0
