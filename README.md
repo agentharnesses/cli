@@ -55,6 +55,33 @@ When using the `claude` preset (default), also installs:
 
 The metaskill is cloned fresh from [agentharnesses/metaskill](https://github.com/agentharnesses/metaskill) at init time, so you always get the latest version.
 
+### `ahar validate`
+
+Validate a harness directory structure:
+
+```bash
+ahar validate ./my-harness
+```
+
+### `ahar read`
+
+Read a property from a harness's `HARNESS.md` frontmatter:
+
+```bash
+ahar read ./my-harness name
+ahar read ./my-harness description
+```
+
+### `ahar prompt`
+
+Render a harness as prompt XML for agent injection:
+
+```bash
+ahar prompt ./my-harness
+```
+
+These commands are backed by [harnesses-ref](https://pypi.org/project/harnesses-ref/), the reference implementation for the Agent Harnesses standard.
+
 ## Publishing
 
 Releases are published to PyPI automatically when a version tag is pushed:
