@@ -127,6 +127,13 @@ TODO: brief description of this harness.
     )
 
     _write(
+        f"{root}/.leaf-detectors",
+        """\
+skill=SKILL.md
+""",
+    )
+
+    _write(
         f"{root}/skills/SKILLS.md",
         """\
 ---
@@ -174,6 +181,7 @@ def init(name):
     click.echo("  HARNESS.md")
     click.echo("  README.md")
     click.echo("  .gitignore")
+    click.echo("  .leaf-detectors")
     click.echo("  .claude/settings.json")
     click.echo("  skills/SKILLS.md")
     click.echo("  references/REFERENCES.md")
