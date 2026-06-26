@@ -58,7 +58,7 @@ def scaffold(root, name):
         f"""\
 ---
 name: {name}
-description: TODO: describe what this harness does and the role it gives Claude.
+description: TODO describe what this harness does and the role it gives Claude.
 ---
 
 ## Upon loading the Harness
